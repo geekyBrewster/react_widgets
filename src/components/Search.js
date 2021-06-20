@@ -5,8 +5,14 @@ const Search = () => {
     //"https://en.wikipedia.org/w/api.php?action=query&list=search&format=json&origin=*&srsearch=llama";
     const baseWikipediaUrl = "https://en.wikipedia.org/w/api.php";
 
-    const [searchTerm, setSearchTerm] = useState('programming');
+    const [searchTerm, setSearchTerm] = useState('llama');
     const [results, setResults] = useState([]);
+
+    //useEffect is passed two arguments - the first is the function to run at render
+    //the seconds will be one of three things:
+        //an empty array - indicates only run function at initial render
+        //nothing - run function at initial render and at every re-render
+        //an array w/ data - run at initial render and at every re-render if one of the element in the array has changed
 
     useEffect (() => {
         //have to put async-await inside the function here due to useEffect not wanting async function as first param
@@ -23,17 +29,29 @@ const Search = () => {
 
             setResults(data.query.search);
         };
-        
-        search();
+
+        if(searchTerm && !results.length){
+            search();
+
+        } else {
+            const timeoutId = setTimeout(() => {
+                if(searchTerm){
+                    search();
+                }
+            }, 500);
+    
+            //useEffect can return one thing, a function - good to use for cleanup
+            //This will be called BEFORE the above function any time the component re-renders (not called on initial render)
+            return () => {
+                clearTimeout(timeoutId);
+            };
+        }
+      
     }, [searchTerm]);
 
-    //useEffect is passed potentially two arguments
-    //first is the function to run at render time
-    //the seconds will be one of three things:
-        //an empty array - indicates only run function at initial render
-        //nothing - run function at initial render and at every re-render
-        //an array w/ data - run at initial render and at every re-render if some element in that array has changed
-    
+
+    //There is a hidden React function that converts a string into HTML, but I don't wish to use it [Trust No One]
+    //So I'll break out the RegEx to remove the span tags coming from the API results
     function removeSpans(resultString){
         const openingTag = '<span class="searchmatch">';
         const closingTag = '</span>';
@@ -47,6 +65,12 @@ const Search = () => {
     var renderedResults = results.map((result) => {
         return (
             <div className="item" key={result.pageid}>
+                <div className="right floated content">
+                    <a 
+                        className="ui button"
+                        href={`https://en.wikipedia.org/?curid=${result.pageid}`}
+                    >Go</a>
+                </div>
                 <div className="content">
                     <div className="header">
                         {result.title}
